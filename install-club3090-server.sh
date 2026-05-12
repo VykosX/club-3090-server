@@ -353,6 +353,10 @@ request_root_permissions() {
 
 request_root_permissions
 
+log_step() {
+  printf '\n[%s] %s\n' "$(date +%H:%M:%S)" "$*"
+}
+
 bootstrap_upstream_repo_for_install() {
   if [[ "${ACTION}" != "install" ]]; then
     return 0
@@ -458,10 +462,6 @@ if [[ "${OS_FAMILY}" == "unsupported" ]]; then
   echo "ERROR: Unsupported distribution: ${PRETTY_NAME:-${ID:-unknown}}. Supported families: Arch and Ubuntu/Debian." >&2
   exit 1
 fi
-
-log_step() {
-  printf '\n[%s] %s\n' "$(date +%H:%M:%S)" "$*"
-}
 
 log_done() {
   printf '[%s] done: %s\n' "$(date +%H:%M:%S)" "$*"
