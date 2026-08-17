@@ -1996,23 +1996,24 @@ unpack_gputemps_vendor_sources() {
     return 1
   fi
   "${SUDO[@]}" mkdir -p "${target_dir}"
-  "${SUDO[@]}" env GPUTEMPS_VENDOR_PAYLOAD_BASE64="${GPUTEMPS_VENDOR_PAYLOAD_BASE64}" "${PYTHON_BIN}" - "${target_dir}" <<'PY'
+  # Stream the payload instead of placing it in argv/the environment: Linux limits
+  # each exec string to 128 KiB on typical systems, and this payload is larger.
+  printf '%s' "${GPUTEMPS_VENDOR_PAYLOAD_BASE64}" | "${SUDO[@]}" "${PYTHON_BIN}" -c '
 import base64
 import gzip
 import json
-import os
 import pathlib
 import sys
 
-payload = os.environ.get("GPUTEMPS_VENDOR_PAYLOAD_BASE64", "")
+payload = sys.stdin.buffer.read()
 target = pathlib.Path(sys.argv[1])
-data = json.loads(gzip.decompress(base64.b64decode(payload.encode("ascii"))).decode("utf-8"))
+data = json.loads(gzip.decompress(base64.b64decode(payload)).decode("utf-8"))
 for name in ("gputemps.c", "nvml.h"):
     text = data.get(name)
     if not isinstance(text, str) or not text:
         raise SystemExit(f"missing vendored {name}")
     (target / name).write_text(text, encoding="utf-8")
-PY
+' "${target_dir}"
 }
 
 ensure_gputemps_helper_available() {
